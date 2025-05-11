@@ -1,0 +1,6 @@
+__pychache__
+*.pyc
+STUFF
+*/debug.py
+venv/
+.env
