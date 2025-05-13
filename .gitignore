@@ -5,3 +5,4 @@ STUFF
 venv/
 .env
 TODO
+*.json

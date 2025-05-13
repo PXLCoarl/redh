@@ -4,8 +4,9 @@ A discord bot that lets you play a game of rdph with your friends.
 
 ## Features
 
-- Queue with custom amount of players
-- Rerolls
+[x] Queue with custom amount of players
+[x] Rerolls
+[ ] Handle Commanders with Partner
 
 ### Prerequisites
 

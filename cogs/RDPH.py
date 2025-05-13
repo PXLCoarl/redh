@@ -83,6 +83,10 @@ async def join(interaction: Interaction) -> None:
     current = len(player_list)
     
     if current == players:
+        wait_embed = Embed(color=Color.dark_magenta(), title='RDPH | Waiting', description='Waiting for the match to start...')
+        wait_embed.set_footer(text=match_uuid)
+        wait_embed.add_field(name=f'Brewers: ({current}/{players})', value='')
+        await interaction.edit_original_response(embed=wait_embed, view=None)
         cards = generate_cards(players, match_uuid)
         if not cards:
             logger.error(f'No cards could be generated for {match_uuid}')
@@ -145,5 +149,5 @@ async def reroll(interaction: Interaction) -> None:
         logger.error('this shouldnt happen rn')
         return
     value = f'Commander: [{card["name"]}]({card["scryfall_uri"]})'
-    embed.set_field_at(index, name=f'**{username}**', value=value)
+    embed.set_field_at(index, name=f'**{username}**', value=value, inline=False)
     await interaction.edit_original_response(embed=embed)
