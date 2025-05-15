@@ -30,17 +30,17 @@ def generate_cards(players: int, match_id: str) -> list:
             timestamp = data.get('timestamp')
             age = datetime.now() - datetime.fromtimestamp(timestamp)
     except (FileNotFoundError, json.JSONDecodeError, TypeError):
+        logger.warning("Card cache is missing or corrupted.")
         age = timedelta(days=999)
     
-    if age < timedelta(days=1):
+    if age < timedelta(days=3):
         logger.info(f"Using cached card data for match {match_id}.")
         cardpool = data.get('cards')
         
     else:
-        logger.warning("Card cache is missing or outdated (older than 1 day). Fetching fresh data...")
+        logger.warning("Fetching fresh data...")
         url = 'https://api.scryfall.com/cards/search?q=(game%3Apaper+or+game%3Amtgo)+r%3Au+(t%3Acreature+or+t%3Abackground)+unique%3Acards+-border%3Asilver'
         session = get_session()
-        
         cardpool = []
         page = 1
         while url:

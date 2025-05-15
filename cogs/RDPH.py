@@ -4,7 +4,7 @@ from discord import app_commands, Interaction, ButtonStyle, SelectOption, Embed,
 from discord.ui import View, Select, select, button
 from discord.ext import commands
 from utilities import logger, generate_cards
-from datetime import datetime
+from utilities.embed_manipulation import create_queue_embed, create_loading_embed, create_error_embed
 import uuid as gen_uuid, discord, re
 
 async def setup(bot: BOT) -> None:
@@ -20,11 +20,7 @@ class RDPHGenerator(commands.Cog):
     
     @app_commands.command(name='rdph', description='rdph queue')
     async def queue(self, interaction: Interaction, players: Literal[1, 2, 3, 4]):
-        uuid = str(gen_uuid.uuid4())
-        embed = Embed(color= Color.dark_magenta(), title=f'RDPH | Queue', description='Ready to join a RDPH Battle?\nPress \'Join\' to challenge yourself to build a pauper commander deck in 1:30h.', timestamp=datetime.now())
-        embed.set_footer(text=uuid)
-        embed.add_field(name=f'Brewers: (0/{players})', value='')
-        
+        embed = await create_queue_embed(players, str(gen_uuid.uuid4()))       
         view = QueueView()
         await interaction.response.send_message(embed=embed, view=view)
         
@@ -66,7 +62,7 @@ class QueueView(View):
         super().__init__(timeout=None)
         self.add_item(QueueButton(label='Join', style=ButtonStyle.green, id='Join'))
         self.add_item(QueueButton(label='Leave', style=ButtonStyle.red, id='Leave'))
-        self.add_item(QueueButton(label='Debug', style=ButtonStyle.grey, id='Debug'))
+        #self.add_item(QueueButton(label='Debug', style=ButtonStyle.grey, id='Debug'))
         
         
 async def join(interaction: Interaction) -> None:
@@ -83,21 +79,21 @@ async def join(interaction: Interaction) -> None:
     current = len(player_list)
     
     if current == players:
-        wait_embed = Embed(color=Color.dark_magenta(), title='RDPH | Waiting', description='Waiting for the match to start...')
-        wait_embed.set_footer(text=match_uuid)
-        wait_embed.add_field(name=f'Brewers: ({current}/{players})', value='')
+        wait_embed = await create_loading_embed(current, players, match_uuid)
         await interaction.edit_original_response(embed=wait_embed, view=None)
         cards = generate_cards(players, match_uuid)
         if not cards:
+            error_embed = await create_error_embed(match_uuid, error="Something went wrong while generating the cards for the match.\nPlease check if [Scryfall](https://scryfall.com/) is accesible,\nor try again later. If the issue persists, contact <@261118995464192000>.")
             logger.error(f'No cards could be generated for {match_uuid}')
             embed.title = 'RDPH | Error'
+            embed.color = Color.red()
             embed.description = (
                 "Something went wrong while generating the cards for the match.\n"
                 "Please check if [Scryfall](https://scryfall.com/) is accesible,\n"
                 "or try again later. If the issue persists, contact <@261118995464192000>."
             )
             embed.clear_fields()
-            await interaction.edit_original_response(embed=embed, view=None)
+            await interaction.edit_original_response(embed=error_embed, view=None)
             return
         embed.clear_fields()
         i = 0
