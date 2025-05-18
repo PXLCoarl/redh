@@ -1,4 +1,4 @@
-import logging, requests, random, json, re
+import logging, requests, random, json, re, os
 from datetime import datetime, timedelta
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -23,8 +23,9 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def generate_cards(players: int, match_id: str) -> list:
+def generate_cards(players: int, match_id: str) -> dict:
     try:
+        os.makedirs('static', exist_ok=True)
         with open('static/local.json', 'r') as file:
             data: dict = json.load(file)
             timestamp = data.get('timestamp')
@@ -61,6 +62,20 @@ def generate_cards(players: int, match_id: str) -> list:
         with open('static/local.json', 'w') as file:
             json.dump(data, file)
     
-    weights = [10 if len(card.get('color_identity', [])) >= 2 else 1 for card in cardpool]
-    cards = random.choices(cardpool, weights=weights, k=players)            
+    weights = [10 if len(card.get('color_identity', [])) >= 2 else 1 for card in cardpool]    
+    cards = {}
+    partner_cards = [card for card in cardpool if "Partner" in card.get("keywords", [])]
+    for i in range(1, players + 1):
+        card = random.choices(cardpool, weights=weights, k=1)[0]
+
+        if "Partner" in card.get("keywords", []):
+            # Pick a second partner that is not the same as the first
+            second_options = [c for c in partner_cards if c["id"] != card["id"]]
+            if second_options:
+                partner2 = random.choice(second_options)
+                cards[i] = [card, partner2]
+            else:
+                cards[i] = [card]  # fallback: only one available
+        else:
+            cards[i] = [card]
     return cards

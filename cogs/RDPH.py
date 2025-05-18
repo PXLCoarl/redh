@@ -96,11 +96,22 @@ async def join(interaction: Interaction) -> None:
             await interaction.edit_original_response(embed=error_embed, view=None)
             return
         embed.clear_fields()
-        i = 0
-        for player in player_list:
-            player_list[i] = f'**{player}**\n  - Commander: [{cards[i]["name"]}]({cards[i]["scryfall_uri"]})'
-            embed.add_field(name=f'**{player}**', value=f'Commander: [{cards[i]["name"]}]({cards[i]["scryfall_uri"]})', inline=False)
-            i += 1
+        for i, player in enumerate(player_list):
+            commanders = cards[i + 1]
+            
+            if len(commanders) == 2:
+                name_line = f'**{player}**'
+                value_line = (
+                    f'Commander: [{commanders[0]["name"]}]({commanders[0]["scryfall_uri"]}) '
+                    f'& [{commanders[1]["name"]}]({commanders[1]["scryfall_uri"]})'
+                )
+            else:
+                name_line = f'**{player}**'
+                value_line = f'Commander: [{commanders[0]["name"]}]({commanders[0]["scryfall_uri"]})'
+            
+            player_list[i] = f'{name_line}\n  - {value_line}'
+            embed.add_field(name=name_line, value=value_line, inline=False)
+
         
         logger.info(f'Match {match_uuid} has started')
         embed.title = 'RDPH | Ongoing'
@@ -138,12 +149,18 @@ async def reroll(interaction: Interaction) -> None:
     embed = interaction.message.embeds[0]
     fields = embed.fields
     match_id = embed.footer.text
-    card = generate_cards(1, match_id)[0]
+    commanders = generate_cards(1, match_id)[1]  # key is 1 (player ID)
     field, index = next(((f, idx) for idx, f in enumerate(fields) if f.name == f'**{username}**'), (None, None))
-
-    if not field:
-        logger.error('this shouldnt happen rn')
+    if field is None:
+        logger.error('Field for user not found in embed.')
         return
-    value = f'Commander: [{card["name"]}]({card["scryfall_uri"]})'
+    if len(commanders) == 2:
+        value = (
+            f'Commander: [{commanders[0]["name"]}]({commanders[0]["scryfall_uri"]}) '
+            f'& [{commanders[1]["name"]}]({commanders[1]["scryfall_uri"]})'
+        )
+    else:
+        value = f'Commander: [{commanders[0]["name"]}]({commanders[0]["scryfall_uri"]})'
+
     embed.set_field_at(index, name=f'**{username}**', value=value, inline=False)
     await interaction.edit_original_response(embed=embed)
